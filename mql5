@@ -1,0 +1,69 @@
+
+//+------------------------------------------------------------------+
+//|                                                 Fight Club GBPUSD |
+//|                                 Developer's site: forexroboteasy.com |
+//|                                                   Forex Robot Easy Team |
+//+------------------------------------------------------------------+
+
+// Define input parameters
+input double RiskLevel = 1.0; // Risk level for each trade
+
+// Define global variables
+double StopLoss;
+double TakeProfit;
+double LotSize;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Calculate stop loss, take profit, and lot size based on risk level
+   StopLoss = NormalizeDouble((Ask - Bid) * RiskLevel, Digits);
+   TakeProfit = NormalizeDouble((Ask - Bid) * RiskLevel * 2, Digits);
+   LotSize = NormalizeDouble(AccountBalance() * RiskLevel / 1000, 2);
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Determine trend direction
+   double trend = iMA(NULL, 0, 200, 0, MODE_EMA, PRICE_CLOSE, 0) - iMA(NULL, 0, 50, 0, MODE_EMA, PRICE_CLOSE, 0);
+
+   // Execute long or short trades based on trend direction
+   if (trend > 0)
+   {
+      // Open a long trade
+      OrderSend(Symbol(), OP_BUY, LotSize, Ask, 0, Bid - StopLoss, Bid + TakeProfit, 'Fight Club GBPUSD', 0, 0, Green);
+   }
+   else if (trend < 0)
+   {
+      // Open a short trade
+      OrderSend(Symbol(), OP_SELL, LotSize, Bid, 0, Ask + StopLoss, Ask - TakeProfit, 'Fight Club GBPUSD', 0, 0, Red);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Close all open trades
+   for (int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+      {
+         if (OrderSymbol() == Symbol())
+         {
+            if (OrderType() == OP_BUY || OrderType() == OP_SELL)
+            {
+               OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 0, White);
+            }
+         }
+      }
+   }
+}
